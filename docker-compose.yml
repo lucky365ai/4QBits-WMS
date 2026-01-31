@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wms-backend
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:./prod.db
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      PORT: 5000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/logs:/app/logs
+      - backend_db:/app/prisma
+    networks:
+      - wms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: wms-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - wms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy (Production)
+  nginx:
+    image: nginx:alpine
+    container_name: wms-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - wms-network
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Development Database (SQLite in container)
+  # For production, use external database service
+  db-backup:
+    image: alpine:latest
+    container_name: wms-db-backup
+    volumes:
+      - backend_db:/backup/db
+      - ./backups:/backup/output
+    command: >
+      sh -c "
+        while true; do
+          cp /backup/db/* /backup/output/ 2>/dev/null || true
+          sleep 3600
+        done
+      "
+    profiles:
+      - backup
+
+volumes:
+  backend_db:
+    driver: local
+
+networks:
+  wms-network:
+    driver: bridge

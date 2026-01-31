@@ -1,0 +1,264 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  role          String   // ADMIN, SPEAKER, STUDENT, GUEST_SPEAKER
+  name          String
+  bio           String?
+  profileImage  String?  @map("profile_image")
+  socialLinks   String?  @map("social_links") // JSON string
+  expertise     String?  // Comma-separated values
+  phone         String?
+  isVerified    Boolean  @default(true) @map("is_verified")
+  isApproved    Boolean  @default(false) @map("is_approved")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workshops     Workshop[]     @relation("WorkshopSpeaker")
+  registrations Registration[]
+  payments      Payment[]
+  attendance    Attendance[]
+  certificates  Certificate[]
+  feedback      Feedback[]
+  files         File[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  waitlist      Waitlist[]
+
+  @@map("users")
+}
+
+model Waitlist {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  workshopId Int      @map("workshop_id")
+  joinedAt   DateTime @default(now()) @map("joined_at")
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id])
+  workshop Workshop @relation(fields: [workshopId], references: [id])
+
+  @@unique([userId, workshopId])
+  @@map("waitlist")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  workshops Workshop[]
+
+  @@map("categories")
+}
+
+model Workshop {
+  id                   Int      @id @default(autoincrement())
+  title                String
+  description          String
+  categoryId           Int      @map("category_id")
+  speakerId            Int      @map("speaker_id")
+  price                Float    @default(0)
+  maxSeats             Int?     @map("max_seats")
+  currentRegistrations Int      @default(0) @map("current_registrations")
+  startDate            DateTime @map("start_date")
+  endDate              DateTime @map("end_date")
+  bannerImage          String?  @map("banner_image")
+  status               String   @default("DRAFT") // DRAFT, PUBLISHED, CANCELLED, COMPLETED
+  tags                 String?  // Comma-separated values
+  requirements         String?
+  learningOutcomes     String?  @map("learning_outcomes") // Comma-separated values
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  category      Category       @relation(fields: [categoryId], references: [id])
+  speaker       User           @relation("WorkshopSpeaker", fields: [speakerId], references: [id])
+  sessions      Session[]
+  registrations Registration[]
+  payments      Payment[]
+  certificates  Certificate[]
+  feedback      Feedback[]
+  files         File[]
+  waitlist      Waitlist[]
+
+  @@map("workshops")
+}
+
+model Session {
+  id          Int       @id @default(autoincrement())
+  workshopId  Int       @map("workshop_id")
+  title       String
+  description String?
+  sessionDate DateTime  @map("session_date")
+  startTime   String    @map("start_time")
+  endTime     String    @map("end_time")
+  qrCode      String?   @unique @map("qr_code")
+  qrExpiresAt DateTime? @map("qr_expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  workshop   Workshop     @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  attendance Attendance[]
+
+  @@map("sessions")
+}
+
+model Registration {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  workshopId   Int      @map("workshop_id")
+  paymentId    Int?     @map("payment_id")
+  status       String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
+  registeredAt DateTime @default(now()) @map("registered_at")
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id])
+  workshop Workshop  @relation(fields: [workshopId], references: [id])
+  payment  Payment?  @relation(fields: [paymentId], references: [id])
+
+  @@unique([userId, workshopId])
+  @@map("registrations")
+}
+
+model Payment {
+  id                   Int      @id @default(autoincrement())
+  userId               Int      @map("user_id")
+  workshopId           Int      @map("workshop_id")
+  amount               Float
+  currency             String   @default("USD")
+  status               String   @default("PENDING") // PENDING, COMPLETED, FAILED, REFUNDED
+  gatewayTransactionId String?  @map("gateway_transaction_id")
+  gatewayName          String?  @map("gateway_name")
+  paymentMethod        String?  @map("payment_method")
+  createdAt            DateTime @default(now()) @map("created_at")
+  completedAt          DateTime? @map("completed_at")
+
+  // Relations
+  user          User           @relation(fields: [userId], references: [id])
+  workshop      Workshop       @relation(fields: [workshopId], references: [id])
+  registrations Registration[]
+
+  @@map("payments")
+}
+
+model Attendance {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  sessionId  Int      @map("session_id")
+  markedAt   DateTime @default(now()) @map("marked_at")
+  qrVerified Boolean  @default(true) @map("qr_verified")
+  ipAddress  String?  @map("ip_address")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id])
+  session Session @relation(fields: [sessionId], references: [id])
+
+  @@unique([userId, sessionId])
+  @@map("attendance")
+}
+
+model Certificate {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  workshopId        Int      @map("workshop_id")
+  certificateNumber String   @unique @map("certificate_number")
+  qrCode            String   @unique @map("qr_code")
+  issuedAt          DateTime @default(now()) @map("issued_at")
+  pdfPath           String?  @map("pdf_path")
+  isValid           Boolean  @default(true) @map("is_valid")
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id])
+  workshop Workshop @relation(fields: [workshopId], references: [id])
+
+  @@unique([userId, workshopId])
+  @@map("certificates")
+}
+
+model Feedback {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  workshopId  Int      @map("workshop_id")
+  rating      Int
+  comment     String?
+  isAnonymous Boolean  @default(false) @map("is_anonymous")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id])
+  workshop Workshop @relation(fields: [workshopId], references: [id])
+
+  @@unique([userId, workshopId])
+  @@map("feedback")
+}
+
+model File {
+  id           Int      @id @default(autoincrement())
+  workshopId   Int      @map("workshop_id")
+  filename     String
+  originalName String   @map("original_name")
+  filepath     String
+  fileType     String?  @map("file_type")
+  fileSize     Int?     @map("file_size")
+  uploadedBy   Int      @map("uploaded_by")
+  isPublic     Boolean  @default(false) @map("is_public")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  workshop Workshop @relation(fields: [workshopId], references: [id])
+  uploader User     @relation(fields: [uploadedBy], references: [id])
+
+  @@map("files")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?     @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   Int?     @map("entity_id")
+  oldValues  String?  @map("old_values") // JSON string
+  newValues  String?  @map("new_values") // JSON string
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR, REMINDER
+  actionUrl String?  @map("action_url")
+  isRead    Boolean  @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
