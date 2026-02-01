@@ -5,7 +5,7 @@ Since Render's "Blueprint" automation is trying to charge you, we will switch to
 **The Stack:**
 1.  **Database**: **Neon.tech** (Best Free Postgres, no sleeping, no credit card).
 2.  **Backend**: **Render** (Free Web Service, manual setup).
-3.  **Frontend**: **Netlify** (Best Free Static Hosting, super fast).
+3.  **Frontend**: **Vercel** (Best Free Frontend Hosting).
 
 ---
 
@@ -33,23 +33,20 @@ Since Render's "Blueprint" automation is trying to charge you, we will switch to
 6.  Click **Create Web Service**.
 7.  **Wait**: Once deployed, copy the **Service URL** (e.g., `https://wms-backend-xyz.onrender.com`).
 
-## Step 3: Deploy Frontend (Netlify)
-1.  Go to [netlify.com](https://www.netlify.com) and Sign Up.
-2.  Click **Add new site** -> **Import an existing project**.
-3.  Connect **GitHub**.
-4.  Select your repo (`lucky365ai/4QBits-WMS`).
-5.  **Build Settings** (It usually detects these automatically):
-    *   **Base directory**: `frontend`
-    *   **Build command**: `npm run build`
-    *   **Publish directory**: `frontend/dist`
-6.  **Environment Variables**:
-    *   Click **Add/Edit Variables**.
+## Step 3: Deploy Frontend (Vercel)
+1.  Go to [tool.vercel.app](https://vercel.com) and Sign Up/Login.
+2.  Click **Add New...** -> **Project**.
+3.  Import your GitHub repo (`lucky365ai/4QBits-WMS`).
+4.  **Configure Project**:
+    *   **Framework Preset**: Vite (should be auto-detected).
+    *   **Root Directory**: Click "Edit" and select `frontend`.
+5.  **Environment Variables**:
     *   Key: `VITE_API_URL`
     *   Value: *Paste your Render Backend URL from Step 2*
-7.  Click **Deploy site**.
+6.  Click **Deploy**.
 
 ## Summary
 - **Database**: Hosted on Neon (Free).
 - **Backend**: Hosted on Render (Free).
-- **Frontend**: Hosted on Netlify (Free).
-- **Cost**: $0.00 forever (within generous limits).
+- **Frontend**: Hosted on Vercel (Free).
+- **Cost**: $0.00 forever.
