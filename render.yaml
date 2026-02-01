@@ -43,10 +43,7 @@ services:
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: wms-backend
-          property: url
+        value: placeholder_update_in_dashboard_after_deploy
     autoDeploy: false
     plan: free
 
