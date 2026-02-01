@@ -33,19 +33,18 @@ services:
       - key: EMAIL_ENABLED
         value: false
     autoDeploy: false
-    plan: free
 
-  - type: web
+
+  - type: pwa
     name: wms-frontend
     rootDir: frontend
-    env: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
         value: placeholder_update_in_dashboard_after_deploy
     autoDeploy: false
-    plan: free
+
 
 databases:
   - name: wms-db
