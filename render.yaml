@@ -43,7 +43,10 @@ services:
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
-        value: https://wms-backend-es5g.onrender.com
+        fromService:
+          type: web
+          name: wms-backend
+          property: url
     autoDeploy: false
     plan: free
 

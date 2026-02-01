@@ -3,7 +3,7 @@ import toast from 'react-hot-toast'
 
 // Create axios instance
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
