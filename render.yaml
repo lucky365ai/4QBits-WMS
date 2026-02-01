@@ -35,7 +35,7 @@ services:
     autoDeploy: false
 
 
-  - type: pwa
+  - type: static
     name: wms-frontend
     rootDir: frontend
     buildCommand: npm install && npm run build
